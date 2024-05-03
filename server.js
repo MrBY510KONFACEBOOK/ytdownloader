@@ -1,35 +1,25 @@
-const express = require('express');
-const fs = require('fs');
-const ytdl = require('ytdl-core');
+const express = require("express");
+const ytdl = require("ytdl-core");
+const cors = require("cors");
 
 const app = express();
-const port = 3000;
 
-app.use(express.json());
+app.use(cors());
 
-app.post('/download', (req, res) => {
-  const url = req.body.url;
+app.get("/download", async (req, res) => {
+  const url = req.query.url;
+  const format = req.query.format;
+  const quality = req.query.quality;
 
-  if (!url) {
-    return res.status(400).send('URL is required');
+  try {
+    const video = ytdl(url, { format, quality }).pipe(res);
+  } catch (err) {
+    res.status(500).send(JSON.stringify(err));
   }
-
-  ytdl.getInfo(url)
-    .then(info => {
-      const format = ytdl.chooseFormat(info.formats, { filter: 'audioonly' });
-      const stream = ytdl(url, { filter: 'audioonly' });
-
-      res.setHeader('Content-Type', format.mimeType);
-      res.setHeader('Content-Disposition', `attachment; filename="${info.title}.mp3"`);
-
-      stream.pipe(res);
-    })
-    .catch(err => {
-      console.error(err);
-      res.status(500).send('Error downloading video');
-    });
 });
 
+const port = 4000;
+
 app.listen(port, () => {
-  console.log(`Server listening at http://localhost:${port}`);
+  console.log(`Server started on port ${port}....`);
 });
